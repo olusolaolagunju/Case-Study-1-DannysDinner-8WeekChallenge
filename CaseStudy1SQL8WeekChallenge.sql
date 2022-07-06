@@ -1,0 +1,195 @@
+----Solution to Case Study 1 of Danny'Dinners 8 Weeks SQL Challenge
+----Creating the tables used for the business task. 
+
+CREATE TABLE DannysDinner
+(CustomerID varchar(100),
+OrderDate Date,
+ProductID int)
+INSERT INTO DannysDinner VALUES 
+ ('A', '2021-01-01', '1'),
+  ('A', '2021-01-01', '2'),
+  ('A', '2021-01-07', '2'),
+  ('A', '2021-01-10', '3'),
+  ('A', '2021-01-11', '3'),
+  ('A', '2021-01-11', '3'),
+  ('B', '2021-01-01', '2'),
+  ('B', '2021-01-02', '2'),
+  ('B', '2021-01-04', '1'),
+  ('B', '2021-01-11', '1'),
+  ('B', '2021-01-16', '3'),
+  ('B', '2021-02-01', '3'),
+  ('C', '2021-01-01', '3'),
+  ('C', '2021-01-01', '3'),
+  ('C', '2021-01-07', '3');
+
+CREATE TABLE Menu
+( ProductID int,
+ProductName varchar(100),
+Price int)
+INSERT INTO Menu VALUES
+  ('1', 'sushi', '10'),
+  ('2', 'curry', '15'),
+  ('3', 'ramen', '12');
+
+CREATE TABLE Members
+(CustomerID VARCHAR(100),
+JoinDate Date)
+INSERT INTO Members VALUES 
+('A', '2021-01-07'),
+  ('B', '2021-01-09');
+
+
+SELECT *
+FROM Dinner..DannysDinner
+
+SELECT *
+FROM Dinner..Members
+
+SELECT *
+FROM Dinner..Menu
+
+------------question 1: What is the total amount that each customer spent at the restaurant
+
+
+SELECT CustomerID, SUM(PRICE)
+FROM DannysDinner A
+JOIN Menu B
+ON A.ProductID =B.ProductID
+GROUP BY CustomerID
+
+--------Question 2: how many days has each customer visited the restaurant
+
+SELECT CustomerID, COUNT(DISTINCT OrderDate)
+FROM Dinner..DannysDinner
+GROUP BY CustomerID
+
+--QUESTION 3 : What was the first item from the menu purchased by each customer
+
+WITH CTE_FirstMenu as 
+(SELECT  CUSTOMERID, OrderDate, ProductName, 
+ROW_NUMBER () OVER (PARTITION BY CUSTOMERID ORDER BY OrderDate) as MenuNum 
+FROM Dinner..DannysDinner A
+JOIN Dinner..Menu B
+ON A.ProductID =B.ProductID)
+SELECT *
+FROM CTE_FirstMenu
+WHERE MenuNum = 1
+
+
+---QUESTION 4 What is the most purchased item on the menu and how many times was it purchased by all customers?
+
+WITH CTE_FirstMenu as 
+(SELECT  CUSTOMERID, OrderDate, ProductName, 
+ROW_NUMBER() OVER (PARTITION BY CUSTOMERID ORDER BY OrderDate) as MenuNum 
+FROM Dinner..DannysDinner A
+JOIN Dinner..Menu B
+ON A.ProductID =B.ProductID)
+SELECT TOP 1 ProductName, COUNT(ProductName) AS TopProduct
+FROM CTE_FirstMenu
+GROUP BY ProductName
+ORDER BY  TopProduct DESC
+
+---QUESTION 5-Which item was the most popular for each customer?
+
+WITH CTE_PopMenu as 
+(SELECT  CUSTOMERID,  ProductName, COUNT(ProductName) AS ProductCount,
+DENSE_RANK () OVER (PARTITION BY CUSTOMERID ORDER BY COUNT(ProductName)DESC) as PopProduct
+FROM Dinner..DannysDinner A
+JOIN Dinner..Menu B
+ON A.ProductID =B.ProductID
+GROUP BY CUSTOMERID, ProductName
+)
+SELECT CUSTOMERID, PRODUCTNAME,  ProductCount
+FROM CTE_PopMenu 
+WHERE  PopProduct = 1
+order by CustomerID, ProductCount DESC
+
+
+--QUESTION 6 Which item was purchased first by the customer after they became a member?
+
+
+WITH CTE_ProductRank as (
+	SELECT  B.CustomerID, A.JoinDate, B.OrderDate, B.ProductID,
+	RANK () OVER (PARTITION BY JoinDate ORDER BY OrderDate) as Ranks 
+FROM Dinner..Members A
+JOIN Dinner..DannysDinner B
+ON A.CUSTOMERID = B.CUSTOMERID
+WHERE JoinDate <= OrderDate)
+SELECT E.CustomerID, E.JoinDate, E.OrderDate, Ranks, C.ProductName 
+FROM CTE_ProductRank E
+JOIN Dinner..Menu C
+ON E.ProductID = C.ProductID
+WHERE Ranks =1
+
+------QUESTION 7 Which item was purchased just before the customer became a member
+WITH CTE_ProductRank as (
+	SELECT  B.CustomerID, A.JoinDate, B.OrderDate, B.ProductID,
+	RANK () OVER (PARTITION BY JoinDate ORDER BY OrderDate DESC) as Ranks 
+FROM Dinner..Members A
+JOIN Dinner..DannysDinner B
+ON A.CUSTOMERID = B.CUSTOMERID
+WHERE JoinDate  > OrderDate)
+SELECT E.CustomerID, E.JoinDate, E.OrderDate, Ranks, C.ProductName 
+FROM CTE_ProductRank E
+JOIN Dinner..Menu C
+ON E.ProductID = C.ProductID
+WHERE Ranks =1
+
+--QUESTION 8: What is the total items and amount spent for each member before they became a member?
+
+WITH CTE_ProductRank as (
+	SELECT  B.CustomerID, A.JoinDate, B.OrderDate, B.ProductID,
+	RANK () OVER (PARTITION BY JoinDate ORDER BY OrderDate DESC) as Ranks 
+FROM Dinner..Members A
+JOIN Dinner..DannysDinner B
+ON A.CUSTOMERID = B.CUSTOMERID
+WHERE JoinDate  > OrderDate)
+SELECT E.CustomerID, SUM(C.Price ) as TotalSpent
+FROM CTE_ProductRank E
+JOIN Dinner..Menu C
+ON E.ProductID = C.ProductID
+GROUP BY E.CustomerID
+
+--QUESTION 9 If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+WITH CTE_PointMultiplier as
+(
+SELECT A.CustomerID, B.ProductName, B.Price,
+CASE
+WHEN ProductName = 'sushi' THEN  Price* 2
+ELSE Price
+END Sushi2
+FROM Dinner..DannysDinner A
+JOIN Dinner..Menu B
+ON A.ProductID = B.PRODUCTID) 
+SELECT CustomerID, SUM(Sushi2 *10) Points
+FROM CTE_PointMultiplier 
+GROUP BY CustomerID
+
+----QUESTION 10 In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - 
+----how many points do customer A and B have at the end of January?
+--NOTE YOU CAN COUNT THE DAYS FROM THE FIRST DATE, SO ONE WEEK WOILD BE PLUS 6 DAYS AND NOT 7 DAYS
+
+---Task 1: calaulate price when orderdate = joindate plus one week
+----task2 : calculate only for the total orders at the end of january only 
+
+WITH CTE_Date as (
+   SELECT *,
+      DATEADD(DAY, 6, JoinDate) AS ValidDate, 
+      EOMONTH('2021-01-31') AS LastDate
+   FROM Dinner..Members)   
+ SELECT A.CustomerID,
+   SUM(
+		CASE 
+		WHEN ProductName ='Sushi' THEN Price*20
+		WHEN OrderDate BETWEEN JoinDate and ValidDate THEN Price*20
+		ELSE Price*10
+		End) as Points
+   FROM CTE_Date A
+   JOIN Dinner..DannysDinner B
+   ON A.CustomerID =B.CustomerID
+   JOIN Dinner..Menu C
+   ON B.ProductID = C.ProductID
+   WHERE B.OrderDate < A.LastDate
+   GROUP BY A.CustomerID
+   
+ 
