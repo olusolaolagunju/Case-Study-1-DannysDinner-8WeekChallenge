@@ -1,6 +1,6 @@
 # Case-Study-1-Danny's Dinner-SQL-Challlenge
 
-View the [Case Study](https://8weeksqlchallenge.com/case-study-1/) and my [solution](https://github.com/olusolaolagunju/Case-Study-1-DannysDinner-8WeekChallenge/blob/main/CaseStudy1Solution.md)
+View the [case study](https://8weeksqlchallenge.com/case-study-1/) and my [solution](https://github.com/olusolaolagunju/Case-Study-1-DannysDinner-8WeekChallenge/blob/main/CaseStudy1Solution.md)
 
 ### **Introduction:**
 Danny seriously loves Japanese food so in the beginning of 2021, he decides to embark upon a risky venture and opens up a cute little restaurant that sells his 3 favourite foods: sushi, curry and ramen.
