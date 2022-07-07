@@ -266,4 +266,4 @@ Code Explanation:
 
 
 
-### **Thank you for reading, please don't hesitate to contribute to the code when you fish out an error. See you next time. XOXO** 
+### **Thank you for sticking with me to the end. Please, don't hesitate to contribute to the code when you fish out an error. See you next time. XOXO** 
