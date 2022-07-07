@@ -254,7 +254,7 @@ WITH CTE_Date as (
    GROUP BY A.CustomerID
 ```
 ### Output:
-![iamge]()
+![image](https://github.com/olusolaolagunju/Case-Study-1-DannysDinner-SQL-Challenge/blob/main/image/Ques10.png)
 
 Customer B got the highest point of 940, followed by A and C.
 
